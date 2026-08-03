@@ -1,0 +1,134 @@
+openapi: 3.1.1
+info:
+  title: Blog API Proyect
+  version: 1.0.0
+  description: API REST para el proyecto de blog
+  contact:
+    name: Blog API Julio Antonny
+    email: cq.julio.antonny@gmail.com
+
+servers:
+  - url: http://localhost:8080
+    description: Servidor local de desarrollo
+  - url: https://api.blogproyect.com
+    description: Servidor de producción
+paths:
+  /authors:
+    get:
+      summary: Obtener todos los autores
+      description: Devuelve una lista de todos los autores registrados en el sistema.
+      tags:
+        - Autores
+      responses:
+        "200":
+          description: Lista de autores
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Author"
+        "500":
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+    post:
+      summary: Crear un nuevo autor
+      tags:
+        - Autores
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - name
+                - email
+              properties:
+                name:
+                  type: string
+                  description: Nombre completo del autor
+                email:
+                  type: string
+                  format: email
+                  description: Correo electrónico del autor (debe ser único)
+                bio:
+                  type: string
+                  description: Biografía del autor(opcional)
+      responses:
+        "201":
+          description: Autor creado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Author"
+        "400":
+          description: Datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+        "409":
+          description: Email ya existe
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+  /authors/{id}:
+    get:
+      summary: Obtener un autor por ID
+      tags:
+        - Autores
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID del autor
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Autor encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Author"
+        "404":
+          description: Autor no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+
+components:
+  schemas:
+    Author:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: ID único del autor
+        name:
+          type: string
+          description: Nombre del autor
+        email:
+          type: string
+          format: email
+          description: Correo electrónico del autor
+        bio:
+          type: string
+          description: Biografía del autor
+        created_at:
+          type: string
+          format: date-time
+          description: Fecha de creación del autor
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Mensaje de error
