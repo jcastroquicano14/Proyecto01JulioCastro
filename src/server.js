@@ -1,23 +1,18 @@
 import "dotenv/config";
-import express from "express";
-import swaggerUi from "swagger-ui-express";
-import YAML from "yamljs";
-import { errorHandler } from "./middlewares/errorHandler.js";
-import router from "./routes/index.js";
+import app from "./app.js";
+import pool from "./db/config.js";
 
-const app = express();
 const PORT = process.env.PORT || 3000;
 
-const swaggerDocument = YAML.load("./src/docs/openapi.yaml");
+pool
+	.query("SELECT NOW()")
+	.then(() => {
+		console.log("Conexion a la base de datos establecida correctamente");
 
-app.use(express.json());
-
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
-
-app.use(router);
-
-app.use(errorHandler);
-
-app.listen(PORT, () => {
-	console.log(`Servidor Express en http://localhost:${PORT}`);
-});
+		app.listen(PORT, () => {
+			console.log(`Servidor escuchando en el puerto ${PORT}`);
+		});
+	})
+	.catch((error) => {
+		console.error("Error al conectar a la base de datos:", error);
+	});

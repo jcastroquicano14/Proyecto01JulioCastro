@@ -1,42 +1,38 @@
-import pool from "../db/config.js";
+import {
+	createPostService,
+	deletePostService,
+	getAllPostsService,
+	getPostByIdService,
+	getPostsByAuthorService,
+	updatePostService,
+} from "../services/postsServices.js";
 
-export const getAllPosts = async (req, res) => {
+export const getAllPosts = async (req, res, next) => {
 	try {
 		const { published } = req.query;
-
-		let query = "SELECT * FROM posts";
-		let params = [];
-
-		if (published !== undefined) {
-			query += " WHERE published = $1";
-			params.push(published === "true");
-		}
-
-		const result = await pool.query(query, params);
-		res.json(result.rows);
+		const posts = await getAllPostsService(published);
+		res.json(posts);
 	} catch (error) {
-		console.error("Error obteniendo posts:", error);
-		res.status(500).json({ error: "Error obteniendo posts" });
+		next(error);
 	}
 };
 
-export const getPostById = async (req, res) => {
+export const getPostById = async (req, res, next) => {
 	try {
 		const { id } = req.params;
-		const result = await pool.query("SELECT * FROM posts WHERE id = $1", [
-			id,
-		]);
-		if (result.rows.length === 0) {
+		const post = await getPostByIdService(id);
+
+		if (!post) {
 			return res.status(404).json({ error: "Post no encontrado" });
 		}
-		res.json(result.rows[0]);
+
+		res.json(post);
 	} catch (error) {
-		console.error("Error obteniendo post:", error);
-		res.status(500).json({ error: "Error obteniendo post" });
+		next(error);
 	}
 };
 
-export const createPost = async (req, res) => {
+export const createPost = async (req, res, next) => {
 	try {
 		const { title, content, author_id, published } = req.body;
 
@@ -44,69 +40,69 @@ export const createPost = async (req, res) => {
 			return res.status(400).json({ error: "Faltan campos obligatorios" });
 		}
 
-		const result = await pool.query(
-			"INSERT INTO posts (title, content, author_id, published) VALUES ($1, $2, $3, $4) RETURNING *",
-			[title, content, author_id, published || false],
-		);
-		res.status(201).json(result.rows[0]);
-	} catch (error) {
-		console.error("Error creando post:", error);
+		const newPost = await createPostService({
+			title,
+			content,
+			author_id,
+			published,
+		});
 
+		res.status(201).json(newPost);
+	} catch (error) {
+		// Si la clave foránea del autor no existe (foreign_key_violation)
 		if (error.code === "23503") {
-			return res
-				.status(400)
-				.json({ error: "El autor especificado no existe" });
+			return res.status(400).json({ error: "El autor especificado no existe" });
 		}
-
-		res.status(500).json({ error: "Error creando post" });
+		next(error);
 	}
 };
 
-export const updatePost = async (req, res) => {
+export const updatePost = async (req, res, next) => {
 	try {
 		const { id } = req.params;
-		const { title, content, published } = req.body;
-		const result = await pool.query(
-			"UPDATE posts SET title = COALESCE($1, title), content = COALESCE($2, content), published = COALESCE($3, published) WHERE id = $4 RETURNING *",
-			[title, content, published, id],
-		);
-		if (result.rows.length === 0) {
+		const updatedPost = await updatePostService(id, req.body);
+
+		if (!updatedPost) {
 			return res.status(404).json({ error: "Post no encontrado" });
 		}
-		res.json(result.rows[0]);
+
+		res.json(updatedPost);
 	} catch (error) {
-		console.error("Error actualizando post:", error);
-		res.status(500).json({ error: "Error actualizando post" });
+		if (error.code === "23503") {
+			return res.status(400).json({ error: "El autor especificado no existe" });
+		}
+		next(error);
 	}
 };
 
-export const deletePost = async (req, res) => {
+export const deletePost = async (req, res, next) => {
 	try {
 		const { id } = req.params;
-		const result = await pool.query(
-			"DELETE FROM posts WHERE id = $1 RETURNING *",
-			[id],
-		);
-		if (result.rows.length === 0) {
+		const deletedPost = await deletePostService(id);
+
+		if (!deletedPost) {
 			return res.status(404).json({ error: "Post no encontrado" });
 		}
-		res.json(result.rows[0]);
+
+		res.json(deletedPost);
 	} catch (error) {
-		console.error("Error eliminando post:", error);
-		res.status(500).json({ error: "Error eliminando post" });
+		next(error);
 	}
 };
 
-export const getPostsByAuthor = async (req, res) => {
+export const getPostsByAuthor = async (req, res, next) => {
 	try {
 		const { author_id } = req.params;
-		const result = await pool.query(
-			"SELECT * FROM posts WHERE author_id = $1",
-			[author_id],
-		);
-		res.json(result.rows);
+		const posts = await getPostsByAuthorService(author_id);
+
+		if (posts.length === 0) {
+			return res
+				.status(404)
+				.json({ error: "No se encontraron posts para este autor" });
+		}
+
+		res.json(posts);
 	} catch (error) {
-		console.error("Error obteniendo posts del autor:", error);
-		res.status(500).json({ error: "Error obteniendo posts del autor" });
+		next(error);
 	}
 };
