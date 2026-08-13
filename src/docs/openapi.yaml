@@ -10,7 +10,7 @@ info:
 servers:
   - url: http://localhost:8080
     description: Servidor local de desarrollo
-  - url: https://proyecto01juliocastro-production.up.railway.app
+  - url: https://proyecto01juliocastro-production-0a09.up.railway.app
     description: Servidor de producción
 tags:
   - name: Autores
