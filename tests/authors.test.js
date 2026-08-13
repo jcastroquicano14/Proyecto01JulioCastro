@@ -47,4 +47,26 @@ describe("GET /authors/:id", () => {
 		expect(response.body).toHaveProperty("email", "julio@example.com");
 		expect(response.body).toHaveProperty("bio", "Futbolista");
 	});
+
+	test("debe devolver 404 si el autor no existe", async () => {
+		const response = await request(app).get("/authors/999");
+		expect(response.status).toBe(404);
+		expect(response.body).toHaveProperty("error", "Author not found");
+	});
+});
+
+describe("POST /authors", () => {
+	test("debe crear un nuevo autor", async () => {
+		const newAuthor = {
+			name: "antuan Perez",
+			email: "antuan@example.com",
+			bio: "Escritor",
+		};
+
+		const response = await request(app).post("/authors").send(newAuthor);
+		expect(response.status).toBe(201);
+		expect(response.body).toHaveProperty("name", "antuan Perez");
+		expect(response.body).toHaveProperty("email", "antuan@example.com");
+		expect(response.body).toHaveProperty("bio", "Escritor");
+	});
 });
